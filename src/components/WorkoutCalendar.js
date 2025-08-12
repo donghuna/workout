@@ -485,41 +485,39 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
     <Box>
       {/* 헤더 */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
-        <Box flex={1} />
-        <Box display="flex" alignItems="center" gap={2}>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={onAddWorkout}
-            sx={{ minWidth: 120 }}
-          >
-            Add Workout
-          </Button>
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={handleViewModeChange}
-            aria-label="view mode"
-            size="small"
-            sx={{
-              '& .MuiToggleButton-root': {
-                px: 2,
-                py: 0.5,
-                fontWeight: 'bold',
-                fontSize: '0.9rem',
-              }
-            }}
-          >
-            <ToggleButton value="month" aria-label="month view">
-              <CalendarViewMonthIcon sx={{ mr: 1, fontSize: '1rem' }} />
-              Monthly
-            </ToggleButton>
-            <ToggleButton value="year" aria-label="year view">
-              <CalendarMonthIcon sx={{ mr: 1, fontSize: '1rem' }} />
-              Yearly
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={onAddWorkout}
+          size="small"
+          sx={{ minWidth: 100 }}
+        >
+          Add Workout
+        </Button>
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={handleViewModeChange}
+          aria-label="view mode"
+          size="small"
+          sx={{
+            '& .MuiToggleButton-root': {
+              px: 1.5,
+              py: 0.5,
+              fontWeight: 'bold',
+              fontSize: '0.8rem',
+            }
+          }}
+        >
+          <ToggleButton value="month" aria-label="month view">
+            <CalendarViewMonthIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} />
+            Monthly
+          </ToggleButton>
+          <ToggleButton value="year" aria-label="year view">
+            <CalendarMonthIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} />
+            Yearly
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       {/* 년도/월 네비게이션 - 월별 보기에서만 표시 */}
@@ -659,16 +657,16 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                 <Card
                   key={index}
                   sx={{
-                    height: 100,
+                    height: isSelected && workouts.length > 1 ? Math.max(100 + (workouts.length * 25), 150) : 100,
                     width: '100%',
                     cursor: day ? 'pointer' : 'default',
                     backgroundColor: isSelected ? (theme) => theme.palette.mode === 'dark' ? 'grey.700' : 'grey.200' : 'background.paper',
                     border: isToday ? 2 : 1,
                     borderColor: isToday ? 'primary.main' : 'divider',
+                    transition: 'all 0.3s ease',
                     '&:hover': day ? {
                       backgroundColor: isSelected ? (theme) => theme.palette.mode === 'dark' ? 'grey.600' : 'grey.300' : 'action.hover',
-                      transform: 'scale(1.02)',
-                      transition: 'all 0.2s'
+                      transform: isSelected ? 'none' : 'scale(1.02)',
                     } : {}
                   }}
                   onClick={() => handleDateClick(day)}
@@ -685,102 +683,148 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                       {day ? format(day, 'd') : ''}
                     </Typography>
                     
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.3, justifyContent: 'center' }}>
-                      {workouts.slice(0, 4).map((workout, idx) => (
-                        <Tooltip
-                          key={idx}
-                          title={`${workoutTypes[workout.type].label}${workout.duration ? ` - ${workout.duration}분` : ''}${workout.distance ? ` - ${workout.distance}km` : ''}${workout.sets ? ` - ${workout.sets}세트` : ''}`}
-                          arrow
-                        >
+                    {!isSelected ? (
+                      // 선택되지 않은 상태: 기존 운동 점 표시
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.3, justifyContent: 'center' }}>
+                        {workouts.slice(0, 4).map((workout, idx) => (
+                          <Tooltip
+                            key={idx}
+                            title={`${workoutTypes[workout.type].label}${workout.duration ? ` - ${workout.duration}분` : ''}${workout.distance ? ` - ${workout.distance}km` : ''}${workout.sets ? ` - ${workout.sets}세트` : ''}`}
+                            arrow
+                          >
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: workoutTypes[workout.type].color,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  transform: 'scale(1.3)',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onWorkoutClick(day, workout);
+                              }}
+                            />
+                          </Tooltip>
+                        ))}
+                        {workouts.length > 4 && (
+                          <Tooltip title={`${workouts.length - 4}개 더`} arrow>
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: 'grey.500',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.6rem',
+                                color: 'white',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              +
+                            </Box>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    ) : (
+                      // 선택된 상태: 상세 운동 정보 표시
+                      <Box sx={{ height: workouts.length > 1 ? 'calc(100% - 30px)' : '100%' }}>
+                        {workouts.length > 0 ? (
+                          <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: 0.3, 
+                            height: '100%',
+                            justifyContent: workouts.length === 1 ? 'center' : 'flex-start'
+                          }}>
+                            {workouts.map((workout, idx) => (
+                              <Box
+                                key={idx}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.2,
+                                  p: 0.2,
+                                  backgroundColor: workoutTypes[workout.type].color + '20',
+                                  borderRadius: 0.5,
+                                  border: 1,
+                                  borderColor: workoutTypes[workout.type].color + '40'
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    backgroundColor: workoutTypes[workout.type].color,
+                                    flexShrink: 0
+                                  }}
+                                />
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      color: 'text.primary',
+                                      display: 'block',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      fontSize: '0.7rem',
+                                      lineHeight: 1.1,
+                                      mb: 0
+                                    }}
+                                  >
+                                    {workoutTypes[workout.type].label}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: 'text.secondary',
+                                      fontSize: '0.6rem',
+                                      lineHeight: 1,
+                                      mt: 0
+                                    }}
+                                  >
+                                    {workout.duration && `${workout.duration}분`}
+                                    {workout.distance && `${workout.distance}km`}
+                                    {workout.sets && `${workout.sets}세트`}
+                                    {workout.reps && `${workout.reps}회`}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : (
                           <Box
                             sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: '50%',
-                              backgroundColor: workoutTypes[workout.type].color,
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              '&:hover': {
-                                transform: 'scale(1.3)',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                              }
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onWorkoutClick(day, workout);
-                            }}
-                          />
-                        </Tooltip>
-                      ))}
-                                              {workouts.length > 4 && (
-                        <Tooltip title={`${workouts.length - 4}개 더`} arrow>
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: '50%',
-                              backgroundColor: 'grey.500',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '0.6rem',
-                              color: 'white',
-                              fontWeight: 'bold'
+                              height: '100%',
+                              color: 'text.secondary',
+                              fontSize: '0.8rem'
                             }}
                           >
-                            +
+                            운동 기록 없음
                           </Box>
-                        </Tooltip>
-                      )}
-                    </Box>
+                        )}
+                      </Box>
+                    )}
                   </CardContent>
                 </Card>
               );
             })}
           </Box>
 
-          {selectedDate && (
-            <Box mt={3}>
-              <Divider sx={{ mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                {format(selectedDate, 'M월 d일 (E)', { locale: ko })} 운동 기록
-              </Typography>
-              {getWorkoutsForDate(selectedDate).length > 0 ? (
-                <Grid container spacing={1}>
-                  {getWorkoutsForDate(selectedDate).map((workout, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Card sx={{ 
-                        backgroundColor: workoutTypes[workout.type].color + '10',
-                        border: 1,
-                        borderColor: 'divider'
-                      }}>
-                        <CardContent>
-                          <Box display="flex" alignItems="center" gap={1} mb={1}>
-                            <Typography variant="h4">
-                              {workoutTypes[workout.type].emoji}
-                            </Typography>
-                            <Typography variant="h6">
-                              {workoutTypes[workout.type].label}
-                            </Typography>
-                          </Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {workout.duration && `시간: ${workout.duration}분`}
-                            {workout.distance && `거리: ${workout.distance}km`}
-                            {workout.sets && `세트: ${workout.sets}세트`}
-                            {workout.reps && `횟수: ${workout.reps}회`}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              ) : (
-                <Typography variant="body1" color="text.secondary">
-                  이 날은 운동 기록이 없습니다.
-                </Typography>
-              )}
-            </Box>
-          )}
+
 
           {/* 운동 종류 */}
           <Box mt={3}>
@@ -900,24 +944,24 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                               gridTemplateColumns: 'repeat(7, 1fr)',
                               gap: 0.5,
                               p: 1,
-                              backgroundColor: 'grey.50',
+                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
                               borderRadius: 0.5
                             }}
                           >
-                                                          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-                                <Box
-                                  key={day}
-                                  sx={{
-                                    p: 0.5,
-                                    textAlign: 'center',
-                                    fontSize: '0.6rem',
-                                    fontWeight: 'bold',
-                                    color: day === '일' ? 'error.main' : day === '토' ? 'primary.main' : 'text.secondary'
-                                  }}
-                                >
-                                  {day}
-                                </Box>
-                              ))}
+                            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+                              <Box
+                                key={day}
+                                sx={{
+                                  p: 0.5,
+                                  textAlign: 'center',
+                                  fontSize: '0.6rem',
+                                  fontWeight: 'bold',
+                                  color: day === '일' ? 'error.main' : day === '토' ? 'primary.main' : 'text.secondary'
+                                }}
+                              >
+                                {day}
+                              </Box>
+                            ))}
                             {(() => {
                               const start = startOfMonth(currentDate);
                               const end = endOfMonth(currentDate);
@@ -932,13 +976,13 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                                   return (
                                     <Box
                                       key={dayIndex}
-                                                                              sx={{
-                                          aspectRatio: '1',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          fontSize: '0.6rem'
-                                        }}
+                                      sx={{
+                                        aspectRatio: '1',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.6rem'
+                                      }}
                                     />
                                   );
                                 }
@@ -951,23 +995,23 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                                 return (
                                   <Box
                                     key={dayIndex}
-                                                                            sx={{
-                                          aspectRatio: '1',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          fontSize: '0.6rem',
-                                          fontWeight: isToday ? 'bold' : 'normal',
-                                          color: 'text.primary',
-                                          backgroundColor: didWorkout ? value.color + '20' : 'transparent',
-                                          border: didWorkout ? 1 : 0,
-                                          borderColor: value.color,
-                                          borderRadius: 0.3,
-                                          cursor: 'pointer',
-                                          '&:hover': {
-                                            backgroundColor: didWorkout ? value.color + '30' : 'grey.100'
-                                          }
-                                        }}
+                                    sx={{
+                                      aspectRatio: '1',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.6rem',
+                                      fontWeight: isToday ? 'bold' : 'normal',
+                                      color: 'text.primary',
+                                      backgroundColor: didWorkout ? value.color + '20' : 'transparent',
+                                      border: didWorkout ? 1 : 0,
+                                      borderColor: value.color,
+                                      borderRadius: 0.3,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        backgroundColor: didWorkout ? value.color + '30' : (theme) => theme.palette.mode === 'dark' ? 'grey.700' : 'grey.100'
+                                      }
+                                    }}
                                     title={didWorkout ? 
                                       `${format(day, 'M월 d일')} - ${value.label} 완료` : 
                                       `${format(day, 'M월 d일')}`
