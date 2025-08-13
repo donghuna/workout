@@ -31,6 +31,7 @@ const WorkoutForm = ({ onBack, onSave }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [pushupSets, setPushupSets] = useState([{ reps: '' }]);
   const [pullupSets, setPullupSets] = useState([{ reps: '' }]);
+
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [loading, setLoading] = useState(false);
 

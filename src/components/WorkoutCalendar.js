@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -13,7 +13,9 @@ import {
   Button,
   Paper,
   ToggleButton,
-  ToggleButtonGroup
+  ToggleButtonGroup,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -46,6 +48,7 @@ import {
   getWorkoutDataByDate,
   getWorkoutStats 
 } from '../data/workoutData';
+import MonthlyProgressBar from './MonthlyProgressBar';
 
 const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorkout }) => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -54,6 +57,15 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
   const [viewMode, setViewMode] = useState('month');
   const [workoutData, setWorkoutData] = useState({});
   const [loading, setLoading] = useState(true);
+  
+  // 스와이프 관련 refs
+  const swipeStartX = useRef(0);
+  const swipeEndX = useRef(0);
+  const containerRef = useRef(null);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   // 운동 데이터 로드
   useEffect(() => {
@@ -71,6 +83,35 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
 
     loadWorkoutData();
   }, []);
+
+  // 터치 시작 핸들러
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    swipeStartX.current = touch.clientX;
+  };
+
+  // 터치 이동 핸들러
+  const handleTouchMove = (e) => {
+    const touch = e.touches[0];
+    swipeEndX.current = touch.clientX;
+  };
+
+  // 터치 종료 핸들러
+  const handleTouchEnd = () => {
+    const swipeDistance = swipeEndX.current - swipeStartX.current;
+    const swipeThreshold = 50;
+    
+    // 빠른 스와이프로 월 변경
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+      if (swipeDistance > 0) {
+        // 오른쪽으로 스와이프 - 이전 월
+        handlePrevMonth();
+      } else {
+        // 왼쪽으로 스와이프 - 다음 월
+        handleNextMonth();
+      }
+    }
+  };
 
   // 현재 월의 모든 날짜 계산
   const calendarDays = useMemo(() => {
@@ -482,7 +523,13 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
   };
 
   return (
-    <Box>
+    <Box
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      sx={{ position: 'relative' }}
+    >
       {/* 헤더 */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
         <Button
@@ -620,6 +667,11 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
 
       {viewMode === 'month' ? (
         <>
+          {/* 월간 진행률 바 */}
+          <MonthlyProgressBar
+            currentDate={currentDate}
+            onWorkoutClick={onWorkoutClick}
+          />
 
           <Grid container spacing={1} mb={1}>
             {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
