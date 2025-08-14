@@ -16,7 +16,6 @@ import {
 } from '@mui/icons-material';
 import WorkoutCalendar from './components/WorkoutCalendar';
 import WorkoutDetailView from './components/WorkoutDetailView';
-import WorkoutForm from './components/WorkoutForm'; // 추가
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
@@ -25,7 +24,6 @@ function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [darkMode, setDarkMode] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
-  const [showWorkoutForm, setShowWorkoutForm] = useState(false); // 추가
 
   const theme = useMemo(() => createTheme({
     palette: {
@@ -66,21 +64,6 @@ function App() {
 
   const handleBackFromDetail = () => {
     setSelectedWorkout(null);
-  };
-
-  // 운동 등록 관련 핸들러 추가
-  const handleShowWorkoutForm = () => {
-    setShowWorkoutForm(true);
-  };
-
-  const handleBackFromForm = () => {
-    setShowWorkoutForm(false);
-  };
-
-  const handleWorkoutSaved = () => {
-    setShowWorkoutForm(false);
-    // 페이지 새로고침으로 데이터 업데이트 (실제로는 상태 관리 개선 필요)
-    window.location.reload();
   };
 
   return (
@@ -124,12 +107,7 @@ function App() {
               borderColor: 'divider',
             }}
           >
-            {showWorkoutForm ? (
-              <WorkoutForm
-                onBack={handleBackFromForm}
-                onSave={handleWorkoutSaved}
-              />
-            ) : selectedWorkout ? (
+            {selectedWorkout ? (
               <WorkoutDetailView
                 selectedWorkoutType={selectedWorkout}
                 onBack={handleBackFromDetail}
@@ -139,7 +117,6 @@ function App() {
                 currentDate={currentDate}
                 onDateChange={setCurrentDate}
                 onWorkoutClick={handleWorkoutClick}
-                onAddWorkout={handleShowWorkoutForm} // 추가
               />
             )}
           </Paper>

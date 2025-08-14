@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -22,8 +22,7 @@ import {
   ChevronRight as ChevronRightIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
   CalendarMonth as CalendarMonthIcon,
-  CalendarViewMonth as CalendarViewMonthIcon,
-  Add as AddIcon
+  CalendarViewMonth as CalendarViewMonthIcon
 } from '@mui/icons-material';
 import {
   format,
@@ -50,18 +49,13 @@ import {
 } from '../data/workoutData';
 import MonthlyProgressBar from './MonthlyProgressBar';
 
-const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorkout }) => {
+const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [monthMenuOpen, setMonthMenuOpen] = useState(false);
   const [yearMenuOpen, setYearMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState('month');
   const [workoutData, setWorkoutData] = useState({});
   const [loading, setLoading] = useState(true);
-  
-  // 스와이프 관련 refs
-  const swipeStartX = useRef(0);
-  const swipeEndX = useRef(0);
-  const containerRef = useRef(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -83,35 +77,6 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
 
     loadWorkoutData();
   }, []);
-
-  // 터치 시작 핸들러
-  const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    swipeStartX.current = touch.clientX;
-  };
-
-  // 터치 이동 핸들러
-  const handleTouchMove = (e) => {
-    const touch = e.touches[0];
-    swipeEndX.current = touch.clientX;
-  };
-
-  // 터치 종료 핸들러
-  const handleTouchEnd = () => {
-    const swipeDistance = swipeEndX.current - swipeStartX.current;
-    const swipeThreshold = 50;
-    
-    // 빠른 스와이프로 월 변경
-    if (Math.abs(swipeDistance) > swipeThreshold) {
-      if (swipeDistance > 0) {
-        // 오른쪽으로 스와이프 - 이전 월
-        handlePrevMonth();
-      } else {
-        // 왼쪽으로 스와이프 - 다음 월
-        handleNextMonth();
-      }
-    }
-  };
 
   // 현재 월의 모든 날짜 계산
   const calendarDays = useMemo(() => {
@@ -195,15 +160,19 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
     return workoutData[dateKey] || [];
   };
 
-  // 날짜 클릭 핸들러
+  // 날짜 클릭 핸들러 수정 - 운동이 있는 날짜만 선택 가능
   const handleDateClick = (date) => {
     if (date) {
-      // 이미 선택된 날짜를 다시 클릭하면 선택 해제
-      if (selectedDate && isSameDay(selectedDate, date)) {
-        setSelectedDate(null);
-      } else {
-        setSelectedDate(date);
+      const workouts = getWorkoutsForDate(date);
+      if (workouts.length > 0) {
+        // 운동이 있는 날짜만 선택 상태로 변경
+        if (selectedDate && isSameDay(selectedDate, date)) {
+          setSelectedDate(null);
+        } else {
+          setSelectedDate(date);
+        }
       }
+      // 운동이 없는 날짜는 클릭해도 아무 동작하지 않음
     }
   };
 
@@ -523,24 +492,10 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
   };
 
   return (
-    <Box
-      ref={containerRef}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      sx={{ position: 'relative' }}
-    >
-      {/* 헤더 */}
+    <Box sx={{ position: 'relative' }}>
+      {/* 헤더 - Add Workout 버튼 제거 */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={onAddWorkout}
-          size="small"
-          sx={{ minWidth: 100 }}
-        >
-          Add Workout
-        </Button>
+        <Box flex={1} />
         <ToggleButtonGroup
           value={viewMode}
           exclusive
@@ -569,19 +524,41 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
 
       {/* 년도/월 네비게이션 - 월별 보기에서만 표시 */}
       {viewMode === 'month' && (
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-          <IconButton onClick={handlePrevMonth} size="large">
+        <Box 
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 3
+          }}
+        >
+          <IconButton 
+            onClick={handlePrevMonth} 
+            size="large"
+            sx={{ 
+              p: { xs: 0.5, sm: 1 },
+              '& .MuiSvgIcon-root': {
+                fontSize: { xs: '1.5rem', sm: '1.75rem' }
+              }
+            }}
+          >
             <ChevronLeftIcon />
           </IconButton>
           
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box 
+            display="flex" 
+            alignItems="center" 
+            sx={{
+              gap: { xs: 0.3, sm: 1 }
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1,
+                gap: { xs: 0.2, sm: 1 },
                 cursor: 'pointer',
-                p: 1,
+                p: { xs: 0.3, sm: 1 },
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   transform: 'translateY(-1px)',
@@ -594,8 +571,9 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                 sx={{
                   fontWeight: 'bold',
                   color: 'text.primary',
-                  minWidth: 80,
-                  textAlign: 'center'
+                  minWidth: { xs: 40, sm: 80 },
+                  textAlign: 'center',
+                  fontSize: { xs: '1.2rem', sm: '2.125rem' }
                 }}
               >
                 {format(currentDate, 'yyyy')}
@@ -604,7 +582,8 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                 variant="body2"
                 sx={{
                   color: 'text.secondary',
-                  fontWeight: 'medium'
+                  fontWeight: 'medium',
+                  fontSize: { xs: '0.6rem', sm: '0.875rem' }
                 }}
               >
                 년
@@ -612,7 +591,7 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
               <KeyboardArrowDownIcon 
                 sx={{ 
                   color: 'text.secondary',
-                  fontSize: '1.2rem'
+                  fontSize: { xs: '0.8rem', sm: '1.2rem' }
                 }} 
               />
             </Box>
@@ -620,9 +599,9 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1,
+                gap: { xs: 0.2, sm: 1 },
                 cursor: 'pointer',
-                p: 1,
+                p: { xs: 0.3, sm: 1 },
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   transform: 'translateY(-1px)',
@@ -635,8 +614,9 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                 sx={{
                   fontWeight: 'bold',
                   color: 'text.primary',
-                  minWidth: 50,
-                  textAlign: 'center'
+                  minWidth: { xs: 20, sm: 50 },
+                  textAlign: 'center',
+                  fontSize: { xs: '1.2rem', sm: '2.125rem' }
                 }}
               >
                 {format(currentDate, 'M')}
@@ -645,7 +625,8 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                 variant="body2"
                 sx={{
                   color: 'text.secondary',
-                  fontWeight: 'medium'
+                  fontWeight: 'medium',
+                  fontSize: { xs: '0.6rem', sm: '0.875rem' }
                 }}
               >
                 월
@@ -653,13 +634,22 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
               <KeyboardArrowDownIcon 
                 sx={{ 
                   color: 'text.secondary',
-                  fontSize: '1.2rem'
+                  fontSize: { xs: '0.8rem', sm: '1.2rem' }
                 }} 
               />
             </Box>
           </Box>
 
-          <IconButton onClick={handleNextMonth} size="large">
+          <IconButton 
+            onClick={handleNextMonth} 
+            size="large"
+            sx={{ 
+              p: { xs: 0.5, sm: 1 },
+              '& .MuiSvgIcon-root': {
+                fontSize: { xs: '1.5rem', sm: '1.75rem' }
+              }
+            }}
+          >
             <ChevronRightIcon />
           </IconButton>
         </Box>
@@ -711,12 +701,12 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                   sx={{
                     height: isSelected && workouts.length > 1 ? Math.max(100 + (workouts.length * 25), 150) : 100,
                     width: '100%',
-                    cursor: day ? 'pointer' : 'default',
+                    cursor: workouts.length > 0 ? 'pointer' : 'default',
                     backgroundColor: isSelected ? (theme) => theme.palette.mode === 'dark' ? 'grey.700' : 'grey.200' : 'background.paper',
                     border: isToday ? 2 : 1,
                     borderColor: isToday ? 'primary.main' : 'divider',
                     transition: 'all 0.3s ease',
-                    '&:hover': day ? {
+                    '&:hover': workouts.length > 0 ? {
                       backgroundColor: isSelected ? (theme) => theme.palette.mode === 'dark' ? 'grey.600' : 'grey.300' : 'action.hover',
                       transform: isSelected ? 'none' : 'scale(1.02)',
                     } : {}
@@ -738,51 +728,71 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                     {!isSelected ? (
                       // 선택되지 않은 상태: 기존 운동 점 표시
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.3, justifyContent: 'center' }}>
-                        {workouts.slice(0, 4).map((workout, idx) => (
-                          <Tooltip
-                            key={idx}
-                            title={`${workoutTypes[workout.type].label}${workout.duration ? ` - ${workout.duration}분` : ''}${workout.distance ? ` - ${workout.distance}km` : ''}${workout.sets ? ` - ${workout.sets}세트` : ''}`}
-                            arrow
+                        {workouts.length > 0 ? (
+                          // 운동이 있는 경우
+                          <>
+                            {workouts.slice(0, 4).map((workout, idx) => (
+                              <Tooltip
+                                key={idx}
+                                title={`${workoutTypes[workout.type].label}${workout.duration ? ` - ${workout.duration}분` : ''}${workout.distance ? ` - ${workout.distance}km` : ''}${workout.sets ? ` - ${workout.sets}세트` : ''}`}
+                                arrow
+                              >
+                                <Box
+                                  sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: workoutTypes[workout.type].color,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                      transform: 'scale(1.3)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                    }
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onWorkoutClick(day, workout);
+                                  }}
+                                />
+                              </Tooltip>
+                            ))}
+                            {workouts.length > 4 && (
+                              <Tooltip title={`${workouts.length - 4}개 더`} arrow>
+                                <Box
+                                  sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: 'grey.500',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.6rem',
+                                    color: 'white',
+                                    fontWeight: 'bold'
+                                  }}
+                                >
+                                  +
+                                </Box>
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : (
+                          // 운동이 없는 경우 - 빈 상태 표시
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              height: '100%',
+                              color: 'text.disabled',
+                              fontSize: '0.7rem',
+                              opacity: 0.3
+                            }}
                           >
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: '50%',
-                                backgroundColor: workoutTypes[workout.type].color,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                  transform: 'scale(1.3)',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                }
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onWorkoutClick(day, workout);
-                              }}
-                            />
-                          </Tooltip>
-                        ))}
-                        {workouts.length > 4 && (
-                          <Tooltip title={`${workouts.length - 4}개 더`} arrow>
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: '50%',
-                                backgroundColor: 'grey.500',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.6rem',
-                                color: 'white',
-                                fontWeight: 'bold'
-                              }}
-                            >
-                              +
-                            </Box>
-                          </Tooltip>
+                            -
+                          </Box>
                         )}
                       </Box>
                     ) : (
@@ -875,8 +885,6 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
               );
             })}
           </Box>
-
-
 
           {/* 운동 종류 */}
           <Box mt={3}>
@@ -974,9 +982,17 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                     }
                   }}>
                     <CardContent sx={{ p: 2 }}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" gap={4}>
+                      {/* 데스크톱 레이아웃 */}
+                      <Box 
+                        sx={{ 
+                          display: { xs: 'none', md: 'flex' },
+                          alignItems: 'center', 
+                          justifyContent: 'space-between', 
+                          gap: 2
+                        }}
+                      >
                         {/* 왼쪽: 운동명과 오늘 완료 여부 */}
-                        <Box display="flex" alignItems="center" gap={2} minWidth="200px">
+                        <Box display="flex" alignItems="center" gap={2} minWidth="180px">
                           <Typography variant="h6" fontWeight="bold">
                             {value.emoji} {value.label}
                           </Typography>
@@ -1078,8 +1094,8 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                         </Box>
 
                         {/* 통계 정보 */}
-                        <Box display="flex" alignItems="center" gap={4}>
-                          <Box textAlign="center" minWidth="80px">
+                        <Box display="flex" alignItems="center" gap={3}>
+                          <Box textAlign="center" minWidth="70px">
                             <Typography variant="caption" fontWeight="bold" color="text.secondary">
                               연속 기록
                             </Typography>
@@ -1088,7 +1104,7 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                             </Typography>
                           </Box>
 
-                          <Box textAlign="center" minWidth="80px">
+                          <Box textAlign="center" minWidth="70px">
                             <Typography variant="caption" fontWeight="bold" color="text.secondary">
                               달성률
                             </Typography>
@@ -1106,7 +1122,7 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                           sx={{ 
                             borderColor: value.color,
                             color: value.color,
-                            minWidth: '100px',
+                            minWidth: '90px',
                             '&:hover': {
                               backgroundColor: value.color + '10',
                               borderColor: value.color
@@ -1115,6 +1131,155 @@ const WorkoutCalendar = ({ currentDate, onDateChange, onWorkoutClick, onAddWorko
                         >
                           상세 보기
                         </Button>
+                      </Box>
+
+                      {/* 모바일/태블릿 레이아웃 */}
+                      <Box 
+                        sx={{ 
+                          display: { xs: 'block', md: 'none' }
+                        }}
+                      >
+                        {/* 헤더: 운동명과 상태 */}
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Typography variant="h6" fontWeight="bold">
+                              {value.emoji} {value.label}
+                            </Typography>
+                            <Chip 
+                              label={didWorkoutToday ? "완료" : "미완료"} 
+                              color={didWorkoutToday ? "success" : "default"}
+                              size="small"
+                              sx={{ fontWeight: 'bold' }}
+                            />
+                          </Box>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => onWorkoutClick(null, { type: key })}
+                            sx={{ 
+                              borderColor: value.color,
+                              color: value.color,
+                              minWidth: '80px',
+                              fontSize: '0.7rem',
+                              '&:hover': {
+                                backgroundColor: value.color + '10',
+                                borderColor: value.color
+                              }
+                            }}
+                          >
+                            상세 보기
+                          </Button>
+                        </Box>
+
+                        {/* 통계 정보 */}
+                        <Box display="flex" justifyContent="space-around" mb={2}>
+                          <Box textAlign="center">
+                            <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                              연속 기록
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" color="primary">
+                              {streak}일
+                            </Typography>
+                          </Box>
+
+                          <Box textAlign="center">
+                            <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                              달성률
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" color="success.main">
+                              {completionRate}%
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {/* 미니 캘린더 */}
+                        <Box>
+                          <Box 
+                            sx={{ 
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(7, 1fr)',
+                              gap: 0.3,
+                              p: 1,
+                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+                              borderRadius: 0.5
+                            }}
+                          >
+                            {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+                              <Box
+                                key={day}
+                                sx={{
+                                  p: 0.3,
+                                  textAlign: 'center',
+                                  fontSize: '0.5rem',
+                                  fontWeight: 'bold',
+                                  color: day === '일' ? 'error.main' : day === '토' ? 'primary.main' : 'text.secondary'
+                                }}
+                              >
+                                {day}
+                              </Box>
+                            ))}
+                            {(() => {
+                              const start = startOfMonth(currentDate);
+                              const end = endOfMonth(currentDate);
+                              const days = eachDayOfInterval({ start, end });
+                              
+                              const firstDayOfWeek = getDay(start);
+                              const emptyDays = Array(firstDayOfWeek).fill(null);
+                              const allDays = [...emptyDays, ...days];
+                              
+                              return allDays.map((day, dayIndex) => {
+                                if (!day) {
+                                  return (
+                                    <Box
+                                      key={dayIndex}
+                                      sx={{
+                                        aspectRatio: '1',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.5rem'
+                                      }}
+                                    />
+                                  );
+                                }
+
+                                const dateKey = format(day, 'yyyy-MM-dd');
+                                const dayWorkouts = workoutData[dateKey] || [];
+                                const didWorkout = dayWorkouts.some(workout => workout.type === key);
+                                const isToday = isSameDay(day, new Date());
+
+                                return (
+                                  <Box
+                                    key={dayIndex}
+                                    sx={{
+                                      aspectRatio: '1',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.5rem',
+                                      fontWeight: isToday ? 'bold' : 'normal',
+                                      color: 'text.primary',
+                                      backgroundColor: didWorkout ? value.color + '20' : 'transparent',
+                                      border: didWorkout ? 1 : 0,
+                                      borderColor: value.color,
+                                      borderRadius: 0.2,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        backgroundColor: didWorkout ? value.color + '30' : (theme) => theme.palette.mode === 'dark' ? 'grey.700' : 'grey.100'
+                                      }
+                                    }}
+                                    title={didWorkout ? 
+                                      `${format(day, 'M월 d일')} - ${value.label} 완료` : 
+                                      `${format(day, 'M월 d일')}`
+                                    }
+                                  >
+                                    {format(day, 'd')}
+                                  </Box>
+                                );
+                              });
+                            })()}
+                          </Box>
+                        </Box>
                       </Box>
                     </CardContent>
                   </Card>
